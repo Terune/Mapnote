@@ -234,7 +234,7 @@ public class MapsActivity extends FragmentActivity implements GoogleMap.OnMapCli
 
                 // Setting position on the MarkerOptions
                 markerOptions.position(mark_point);
-
+                markerOptions.draggable(true);
                 // Animating to the currently touched position
                 mMap.animateCamera(CameraUpdateFactory.newLatLng(mark_point));
 
