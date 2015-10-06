@@ -11,8 +11,10 @@ import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -24,8 +26,10 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,GoogleMap.OnMapLongClickListener,OnMarkerDragListener {
+public class MapsActivity extends FragmentActivity implements GoogleMap.OnMapClickListener,OnMapReadyCallback,GoogleMap.OnMapLongClickListener,OnMarkerDragListener {
 
+    private Button editButton;
+    private Button deleteButton;
     private GoogleMap mMap;
     private String m_Text;
     SQLiteDatabase db;
@@ -49,8 +53,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 null, // 커서 팩토리
                 1); // 버전 번호
 
-    }
 
+    }
 
     /**
      * Manipulates the map once available.
@@ -64,7 +68,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
+        deleteButton = (Button)findViewById(R.id.delete);
+        editButton = (Button)findViewById(R.id.edit);
         // Add a marker in Sydney and move the camera
         LatLng seoul = new LatLng(37, 128);
         //mMap.addMarker(new MarkerOptions().position(seoul).title("Marker in Seoul").draggable(true));
@@ -90,6 +95,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         mMap.setOnMapLongClickListener(this);
         mMap.setOnMarkerDragListener(this);
+        mMap.setOnMapClickListener(this);
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(seoul));
         // Setting a custom info window adapter for the google map
@@ -104,9 +110,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             // Defines the contents of the InfoWindow
             @Override
-            public View getInfoContents(Marker arg0) {
+            public View getInfoContents(final Marker arg0) {
 
-                Mynote now_note;
+                final Mynote now_note;
                 // Getting view from the layout file info_window_layout
                 View v = getLayoutInflater().inflate(R.layout.windowslayout, null);
 
@@ -120,6 +126,53 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 note.setText(now_note.note);
 
+                deleteButton.setVisibility(View.VISIBLE);
+
+                deleteButton.setOnClickListener(new Button.OnClickListener() {
+                    public void onClick(View v) {
+                        arg0.remove();
+                       delete(arg0.getId());
+                    }
+                });
+                editButton.setVisibility(View.VISIBLE);
+
+                editButton.setOnClickListener(new Button.OnClickListener() {
+                    public void onClick(View v) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
+                        builder.setTitle("Edit note");
+
+                        final EditText input = new EditText(MapsActivity.this);
+
+                        input.setInputType(InputType.TYPE_CLASS_TEXT);
+                        input.setText(now_note.note);
+                        builder.setView(input);
+
+                        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                                // mMap.clear();
+                                m_Text = input.getText().toString();
+
+                                if(m_Text.length()>140) {
+                                    m_Text=m_Text.substring(0, 140);
+                                    m_Text=m_Text+"...";
+                                }
+
+                               update(arg0.getId(), m_Text, null, 1);
+                                arg0.showInfoWindow();
+                            }
+                        });
+                        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.cancel();
+                            }
+                        });
+
+                        builder.show();
+                    }
+                });
 
                 // Returning the view containing InfoWindow contents
                 return v;
@@ -333,4 +386,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
+    @Override
+    public void onMapClick(LatLng latLng) {
+        deleteButton.setVisibility(View.INVISIBLE);
+        editButton.setVisibility(View.INVISIBLE);
+    }
 }
